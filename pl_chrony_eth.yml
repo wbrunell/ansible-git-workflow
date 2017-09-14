@@ -1,0 +1,13 @@
+---
+- name: Make sure chronyd is running and synched with eth's ntp server
+  hosts: all
+  remote_user: root
+  tasks:
+    - yum: name=chrony state=present
+    - service: name=chronyd state=started enabled=yes
+    - copy: src=templates/etc_chrony_conf dest=/etc/chrony.conf owner=root group=root mode=0644 backup=yes
+      notify: restart_chronyd
+  handlers:
+    - name: restart_chronyd
+      service: name=chronyd state=restarted
+

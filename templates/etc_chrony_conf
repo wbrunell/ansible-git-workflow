@@ -1,0 +1,16 @@
+server 0.ch.pool.ntp.org
+server 1.ch.pool.ntp.org
+server 2.ch.pool.ntp.org
+server 3.ch.pool.ntp.org
+stratumweight 0
+driftfile /var/lib/chrony/drift
+rtcsync
+makestep 10 3
+bindcmdaddress 127.0.0.1
+bindcmdaddress ::1
+keyfile /etc/chrony.keys
+commandkey 1
+generatecommandkey
+noclientlog
+logchange 0.5
+logdir /var/log/chrony
