@@ -1,0 +1,40 @@
+# This is the default ansible 'hosts' file.
+#
+# It should live in /etc/ansible/hosts
+#
+#   - Comments begin with the '#' character
+#   - Blank lines are ignored
+#   - Groups of hosts are delimited by [header] elements
+#   - You can enter hostnames or ip addresses
+#   - A hostname/ip can be a member of multiple groups
+
+[dsf_infra]
+cos019
+cos020
+
+[dsf_dev]
+cos021
+[dsf_dev:vars]
+repo_env=tml
+
+[dsf_test]
+cos022
+[dsf_test:vars]
+repo_env=tml
+
+[dsf_prod]
+cos023
+[dsf_prod:vars]
+repo_env=dml
+
+[dsf:children]
+dsf_infra
+dsf_dev
+dsf_test
+dsf_prod
+
+[all:vars]
+ansible_connection=ssh
+ansible_ssh_user=root
+ansible_ssh_pass=root   
+
