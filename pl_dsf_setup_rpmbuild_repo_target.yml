@@ -1,0 +1,59 @@
+---
+- name: Setup RPM Build Server
+  hosts: cos019
+  become: yes       
+  tasks:
+    - name: Install packges rpm-build rpm-build-libs
+      yum: name={{ item }} state=present
+      with_items:
+        - rpm-build
+        - rpm-build-libs
+        - git
+    - name: Setup user dsfrpmbuild User
+      user: name=dsfrpmbuild shell=/bin/bash state=present 
+
+- name: Setup RPM Repo Server
+  hosts: cos020
+  become: yes
+  tasks:
+    - name: Setup user dsfrepoadm User
+      user: name=dsfrpmbuild shell=/bin/bash state=present
+    - name: Copy user's public-key/authorized key in in user's homedir ~/.ssh/authorited_keys
+      authorized_key:
+        user: dsfrpmbuild
+        state: present
+        key: "{{ lookup('file', 'files/ssh_authorized_keys.dsfrpmbuild.pub') }}"
+    - name: Install packges 
+      yum: name={{item}} state=present
+      with_items:
+        - httpd
+        - createrepo
+    - name: Make sure repo dir exists
+      file: path=/var/www/html/dsf_{{item}} state=directory owner=dsfrpmbuild group=dsfrpmbuild mode=0755
+      with_items:
+        - tml
+        - dml
+    - name: Execute createrepo
+      command: /usr/bin/createrepo /var/www/html/dsf_{{item}}
+      with_items:
+        - tml
+        - dml
+    - name: restart web server
+      service: name=httpd state=restarted enabled=yes
+    - name: Open firewall port
+      firewalld: service={{item}} permanent=true state=enabled
+      with_items:
+        - http
+
+- name: Setup Target Server User and Repo-Config
+  hosts: dsf_dev, dsf_test, dsf_prod
+  become: yes
+  tasks:
+    - name: Setup user dsfrpminstall
+      user: name=dsfrpminstall shell=/bin/bash state=present
+    - name: Make sure host entry for reposerver exist
+      lineinfile: path=/etc/hosts line='192.168.56.60	cos020'
+    - name: Setup yum.repos.d file
+      yum_repository: name=dsf_{{repo_env}} description='DSF {{repo_env}} Repo' baseurl=http://cos020/dsf_{{repo_env}} gpgcheck=no
+
+
