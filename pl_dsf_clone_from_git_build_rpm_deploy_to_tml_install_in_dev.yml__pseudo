@@ -1,16 +1,3 @@
-#
-# What : Playbook to download feed or stream from GitHub and package it into an RPM. Make it available in a RPM Repo and deploy it to target server.
-#        Environment : 	DEV	TML-Repo
-#	  		TEST	TML-Repo
-#			PROD	DML-Repo
-#
-# Date : 26.Feb.2018 Walter Brunelli
-#
-# Usage: ansible-playbook pl_dsf_clone_from_git_build_rpm_deploy_to_tml_install_in_dev_test.yml
-#	 ansible-playbook pl_dsf_clone_from_git_build_rpm_deploy_to_tml_install_in_dev_test.yml --extra-vars "stream_feed_name=dsf-feeds-F1F"
-#        ansible-playbook pl_dsf_clone_from_git_build_rpm_deploy_to_tml_install_in_dev_test.yml --extra-vars "stream_feed_name=dsf-streams-f1f"
-
-
 ---
 - name: Download and Create the RPM Package         
   hosts: cos019
@@ -40,10 +27,10 @@
     - name: Copy the tar.gz archive to the rpmbuild structure
       command: cp /tmp/{{stream_feed}}.tar.gz ~/rpmbuild/SOURCES
     - name: Copy the spec-file template
-      template: src=templates/rpm_spec_mit_version.spec dest=~/rpmbuild/SPECS 
+      template: src=templates/rpm_spec_mit_version.spec__pseudo dest=~/rpmbuild/SPECS 
     - name: Build the RPM package. The finished package will be ~rpmbuild/rpmbuild/RPMS/noarch/{{stream_feed}}-{{latest_tag.stdout[1:]}}-0.noarch.rpm
-      command: rpmbuild -vv -bb ~/rpmbuild/SPECS/rpm_spec_mit_version.spec --clean
-    - name: Copy RPM package to the TML repository
+      command: rpmbuild -vv -bb ~/rpmbuild/SPECS/rpm_spec_mit_version.spec__pseudo --clean
+    - name: Copy RPM package to the repository
       shell: scp /home/dsfrpmbuild/rpmbuild/RPMS/noarch/{{stream_feed}}-{{latest_tag.stdout[1:]}}-0.noarch.rpm cos020:/var/www/html/dsf_tml
 
 - name: Update TML Repo
@@ -61,7 +48,7 @@
   vars:
     stream_feed: "{{ stream_feed_name | default('dsf-pseudo-xxx') }}"
   tasks:
-    - name: Make yum cache expire in order to re-read updated reposerver metadata
+    - name: make yum cache expire in order to re-read updated reposerver metadata
       shell: "yum clean expire-cache"
     - name: Update repo metadata
       shell: "yum repolist"
