@@ -9,21 +9,21 @@
 #   - A hostname/ip can be a member of multiple groups
 
 [dsf_infra]
-cos019
-cos020
+cos019		ansible_host=192.168.56.59
+cos020		ansible_host=192.168.56.60
 
 [dsf_dev]
-cos021
+cos021		ansible_host=192.168.56.61
 [dsf_dev:vars]
 repo_env=tml
 
 [dsf_test]
-cos022
+cos022		ansible_host=192.168.56.62
 [dsf_test:vars]
 repo_env=tml
 
 [dsf_prod]
-cos023
+cos023		ansible_host=192.168.56.63
 [dsf_prod:vars]
 repo_env=dml
 
