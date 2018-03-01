@@ -9,25 +9,25 @@
 #   - A hostname/ip can be a member of multiple groups
 
 [dsf_infra]
-cos019		ansible_host=192.168.56.59
-cos020		ansible_host=192.168.56.60
+cos019		ansible_host=192.168.56.59		# RPM build server
+cos020		ansible_host=192.168.56.60		# TML and DML RPM-Repo Server
 
-[dsf_dev]
+[dsf_dev]						# DEV server
 cos021		ansible_host=192.168.56.61
-[dsf_dev:vars]
+[dsf_dev:vars]						# DEV server variable setting
 repo_env=tml
 
-[dsf_test]
+[dsf_test]						# TEST server
 cos022		ansible_host=192.168.56.62
-[dsf_test:vars]
+[dsf_test:vars]						# TEST server variable setting
 repo_env=tml
 
-[dsf_prod]
-cos023		ansible_host=192.168.56.63
-[dsf_prod:vars]
+[dsf_prod]						# PROD server
+cos023		ansible_host=192.168.56.63		
+[dsf_prod:vars]						# PROD server variable setting
 repo_env=dml
 
-[dsf:children]
+[dsf:children]						# Group 'dsf' consists of the below groups
 dsf_infra
 dsf_dev
 dsf_test
