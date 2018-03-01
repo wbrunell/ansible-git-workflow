@@ -1,0 +1,30 @@
+#
+# What : Playbook to latest RPM version of {{ stream_feed_name }} grom TML to DML Repo 
+#        Environment : 	DEV	TML-Repo
+#	  		TEST	TML-Repo
+#			PROD	DML-Repo
+#
+# Date : 26.Feb.2018 Walter Brunelli
+#
+
+---
+- name: Update DML Repo
+  hosts: cos020
+  become_user: dsfrpmbuild
+  become: yes
+  vars:
+    stream_feed: "{{ stream_feed_name | default('dsf-pseudo-xxx') }}"
+  tasks:
+    - name: Find latest RPM version
+      shell: "ls -1 /var/www/html/dsf_tml/{{stream_feed}}* | tail -1"
+      register: result
+      ignore_errors: true
+    - name: Display latest RPM version
+      debug: msg="Following RPM File found in TML {{ result.stdout }}"
+    - name: Copy RPM from TML to DML directory {{result.stdout}}
+      shell: "cp `ls -1 {{result.stdout}} | tail -1` /var/www/html/dsf_dml"
+      when: result|succeeded
+    - name: Update DML repo
+      shell: "createrepo /var/www/html/dsf_dml --update"
+      when: result|succeeded
+
