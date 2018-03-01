@@ -1,0 +1,22 @@
+#
+# What : Playbook to remove a specific RPM on all DSF TEST server 
+#        Environment : 	DEV	TML-Repo
+#	  		TEST	TML-Repo
+#			PROD	DML-Repo
+#
+# Date : 01.March 2018 Walter Brunelli
+#
+# Usage:
+#	ansible-playbook pl_dsf_rpm_remove_on_dev_test_prod.yml  --extra-vars "stream_feed_name=dsf-feeds-F1F dsf_env=dsf_dev|host"
+
+---
+- name: Remove RPM on server in a certain environment
+  vars:
+    stream_feed: "{{ stream_feed_name | default('dsf-pseudo-xxx') }}"
+    dsf_env: "{{ dsf_env_name | default('dsf_dev') }}"
+  hosts: "{{dsf_env}}"
+  become_user: root
+  become: yes
+  tasks:
+    - name: Remove RPM package {{stream_feed}} in DSF-Environment {{dsf_env}}
+      yum: name={{stream_feed}} state=absent
