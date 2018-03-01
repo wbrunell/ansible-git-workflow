@@ -9,7 +9,7 @@
 
 ---
 - name: Install on TEST server
-  hosts: dsf_test
+  hosts: dsf_prod
   become_user: root
   become: yes
   vars:
