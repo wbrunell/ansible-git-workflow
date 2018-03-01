@@ -46,7 +46,7 @@
       with_items:
         - http
 
-- name: Setup Target Server User and Repo-Config
+- name: Setup Target Server
   hosts: dsf_dev, dsf_test, dsf_prod
   become: yes
   tasks:
