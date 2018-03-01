@@ -8,17 +8,6 @@
 #
 
 ---
-- name: Find latest version of the pakage to install
-  hosts: cos019
-  become_user: dsfrpmbuild
-  become: yes
-  vars:
-    stream_feed: "{{ stream_feed_name | default('dsf-pseudo-xxx') }}"
-  tasks:
-    - name: Find latest version (tag)
-      shell: git describe --abbrev=0 --tags chdir=/tmp/{{stream_feed}}
-      register: latest_tag
-
 - name: Install on TEST server
   hosts: dsf_test
   become_user: root
@@ -31,4 +20,5 @@
     - name: Update repo metadata
       shell: yum repolist warn=no
     - name: Install package
-      yum: name={{stream_feed}}-{{hostvars.cos019.latest_tag.stdout[1:]}}-0.noarch state=present
+      # yum: name={{stream_feed}}-{{hostvars.cos019.latest_tag.stdout[1:]}}-0.noarch state=present
+      yum: name={{stream_feed}} state=latest
