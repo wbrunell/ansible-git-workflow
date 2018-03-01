@@ -66,6 +66,7 @@
     - name: Update repo metadata
       shell: yum repolist warn=no
     - name: Install package
-      yum: name={{stream_feed}}-{{hostvars.cos019.latest_tag.stdout[1:]}}-0.noarch state=present
+      #yum: name={{stream_feed}}-{{hostvars.cos019.latest_tag.stdout[1:]}}-0.noarch state=present
+      yum: name={{stream_feed}} state=latest
 
 
