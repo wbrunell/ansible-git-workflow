@@ -1,0 +1,8 @@
+# Define default values for variables used in pl_dsf_git_workflow
+# Date?		18.May 2018
+# Who?		Walter Brunelli
+
+repo_url: https://github.com/wbrunell/repo01
+local_base_dir: /var/tmp
+repo_dir_name: repo01
+
