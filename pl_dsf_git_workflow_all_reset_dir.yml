@@ -18,24 +18,32 @@
   become_user: none
   become: no
   vars_files:
-    - pl_dsf_git_workflow_setupvariables.yml
-
-#  vars:
-#    var_repo_url: "{{ repo_url | default('https://github.com/wbrunell/repo01') }}"
-#    var_local_base_dir: "{{ local_base_dir | default('/var/tmp') }}"
-#    var_repo_dir_name: "{{ repo_dir_name | default('repo01') }}"
+    - pl_dsf_git_workflow_all_setupvariables.yml
 
   tasks:
     - name: Check if Directory exists
       stat: path={{local_base_dir}}/{{repo_dir_name}}/.git
       register: dir
-    - name: Exit if directory doesn not exists
-      fail: msg="Local directory {{local_base_dir}}/{{repo_dir_name}} does not exist. Exiting."  
-      when: dir.stat.exists == false
-    - name: Sync the directory (if it exists) and delete local Working-Dir staff which does not exist
+    - name: Clean the directory (if it is already there)
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git pull; /usr/local/bin/git clean -f'
       when: dir.stat.exists == true
       #debug: msg="repo_dirname = {{repo_dir_name}}"
+    - name: Create directory if it does not exist and clone from Github
+      git: repo={{repo_url}} dest={{local_base_dir}}/{{repo_dir_name}}
+      when: dir.stat.exists == false
+    - name: Remove all tags remotely and locally
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag | xargs -n 1 git push -d origin; git tag | xargs git tag -d'
+    - name: Remove all local files and directories, create empty files t1-4, push to remote
+      shell: "rm -f {{local_base_dir}}/{{repo_dir_name}}/*"
+    - name: Create empty files t1-4, commit and push to remote
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; touch {{ item }}; git add .; git commit -m "Reset all files"'
+      with_items:
+        - t1
+        - t2
+        - t3
+        - t4
+    - name: Create Starting Tag 1.0.0 and push everything to Github
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag -a 1.0.0 -m "Starting Version"; git push origin master --tags'
       
 #    - name: Find latest version (tag)
 #      shell: git describe --abbrev=0 --tags chdir=/tmp/{{stream_feed}}

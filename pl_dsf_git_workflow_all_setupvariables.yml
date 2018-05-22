@@ -2,7 +2,12 @@
 # Date?		18.May 2018
 # Who?		Walter Brunelli
 
+# Define default values for the following variables
 repo_url: https://github.com/wbrunell/repo01
 local_base_dir: /var/tmp
 repo_dir_name: repo01
+release_change_type: minor
+
+# Possible values for the variables are:
+# release_change_type: major|minor|patch
 
