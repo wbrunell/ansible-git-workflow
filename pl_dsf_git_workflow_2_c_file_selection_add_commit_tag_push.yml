@@ -12,7 +12,7 @@
 #	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "repo_dir_name=repo01"
 #	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "local_base_dir=/var/tmp"
 #	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "release_change_type: {major|minor|patch}"
-#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "select_file=<file>"
+#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "file_selection=<file>"
 
 ---
 - name: Clean the repo-directory
@@ -40,7 +40,7 @@
       register: result
 
     - name: Add and commit changes 
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git add . ; /usr/local/bin/git commit -m "Commit changes"'
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git add {{file_selection}} ; /usr/local/bin/git commit -m "Commit changes"'
       when: result.rc != 0
 
     - name: Find latest version (tag)
