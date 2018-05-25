@@ -12,7 +12,6 @@
 #	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "repo_dir_name=repo01"
 #	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "local_base_dir=/var/tmp"
 #	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "release_change_type: {major|minor|patch}"
-#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "file_selection=<file>"
 
 ---
 - name: Clean the repo-directory
@@ -30,7 +29,6 @@
     - name: Check if Directory exists
       stat: path={{local_base_dir}}/{{repo_dir_name}}/.git
       register: dir
-
     - name: Exit if directory does not exists
       fail: msg="Local directory {{local_base_dir}}/{{repo_dir_name}} does not exist. Exiting."  
       when: dir.stat.exists == false
@@ -46,7 +44,7 @@
       when: result.rc == 0
 
     - name: Add and commit changes 
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git add {{file_selection}} ; /usr/local/bin/git commit -m "Commit changes"'
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git add . ; /usr/local/bin/git commit -m "Commit changes"'
 
     - name: Find latest version (tag)
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git describe --abbrev=0 --tags chdir={{local_base_dir}}/{{repo_dir_name}}'
@@ -54,6 +52,15 @@
 
     - name: Print latest tag
       debug: var=latest_tag.stdout
+
+    - name: Print major
+      debug: msg="{{latest_tag.stdout.split('.')[0]}}"
+
+    - name: Print minor
+      debug: msg="{{latest_tag.stdout.split('.')[1]}}"
+
+    - name: Print patch
+      debug: msg="{{latest_tag.stdout.split('.')[2]}}"
 
     - name: Set new Git tag - major number increase 
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag -a {{item}} -m "{{item}}"'
@@ -75,10 +82,3 @@
 
     - name: Push commits and tag to Github
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git push origin master --tags'
-
-    - name: Find new version (tag)
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git describe --abbrev=0 --tags chdir={{local_base_dir}}/{{repo_dir_name}}'
-      register: new_tag  
-
-    - name: Show difference between new and old version
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git diff {{new_tag.stdout}} {{latest_tag.stdout}}'
