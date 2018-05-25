@@ -1,19 +1,21 @@
 #
-# What : Playbook to clean and prepare the repo for the Poc of the Git Workflow
-#	 This includes :	- remove all files
-#				- remove all tags
-#				- remove all branches
-#				- create new empty files t1 t2 t3 t4
+# What : Playbook to push changes into GITHUB
+#	 This includes :	- Changes on old code version (Parapeter version_to_patch)
+#				- Changes to current version
+#        Tasks ececuted:	- git add / git commit
+#				- calculate and apply new tag 
+#				- push to Github
+#				- Same for old code version (Parameter version_to_patch)
 #
 # Date : 17.May 2018 Walter Brunelli
 #
-# Usage: ansible-playbook pl_dsf_git_workflow_clean_repo.yml
-#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "repo_url=https://github.com/wbrunell/repo01"
-#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "repo_dir_name=repo01"
-#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "local_base_dir=/var/tmp"
-#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "release_change_type: {major|minor|patch}"
-#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "file_selection=<file>"
-#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "prod_version_to_patch==<tag|version>"
+# Usage: ansible-playbook ${0}
+#	 ansible-playbook ${0} --extra-vars "repo_url=https://github.com/wbrunell/repo01"
+#	 ansible-playbook ${0} --extra-vars "repo_dir_name=repo01"
+#	 ansible-playbook ${0} --extra-vars "local_base_dir=/var/tmp"
+#	 ansible-playbook ${0} --extra-vars "release_change_type: {major|minor|patch}"
+#	 ansible-playbook ${0} --extra-vars "file_selection=<file>"
+#	 ansible-playbook ${0} --extra-vars "version_to_patch=<tag|version>"		# Default: 1.0.0
 
 ---
 - name: pl_dsf_git_workflow_3_c_file_selection_sos_add_commit_cherry_pick_2tag_push.yml
@@ -23,9 +25,9 @@
   vars_files:
     - pl_dsf_git_workflow_all_setupvariables.yml
   # Prompt the user what kind of release change it is (major|mionor|patch)
-  vars_prompt:
-    - name: release_change_type_id
-      prompt: "What kind of change are you about to release ? \nRequired to identify which field of the version number will be increased. \n1- major\n2- minor\n3- patch"
+#  vars_prompt:
+#    - name: release_change_type_id
+#      prompt: "What kind of change are you about to release ? \nRequired to identify which field of the version number will be increased. \n1- major\n2- minor\n3- patch"
 
   tasks:
     ## Do some checks before starting
@@ -67,7 +69,7 @@
       with_items:
         - 'git add {{file_selection}}'
         - 'git commit -m "Commit changes"'
-        - 'git push origin master'
+        - 'git push origin master --tags'
 
     - name: Get the commit-hash
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git log --pretty=oneline -1 --pretty=format:"%h"' 
@@ -99,18 +101,38 @@
     ## Create sos Branch
 
     - name: Create sos-Branch out of prod-Version/Tag
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git branch sos {{prod_version_to_patch}}'
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git branch sos {{version_to_patch}}'
 
     - name: Switch to sos Branch and cherry-pick the sos-commit-change
       shell: "{{item}}"
       with_items:
-        - 'git worktree add .branch_sos sos chdir={{local_base_dir}}/{{repo_dir_name}}'
-        - 'git cherry-pick {{commit_in_master.stdout} chdir={{local_base_dir}}/{{repo_dir_name}}/.branch_sos}'
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git worktree add .branch_sos sos' 
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git cherry-pick {{commit_in_master.stdout}}'
+      tags: branch
 
-    - name: Show the difference between the bug-fix of prod-version vs prod-version
+    - name: Tag the bug-fixed version in sos branch and push to Github
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; /usr/local/bin/git tag -a {{item}} -m "Version {{item}}"'
+      with_items:
+        - "{{version_to_patch.split('.')[0]}}.{{version_to_patch.split('.')[1]}}.{{version_to_patch.split('.')[2] | int + 1}}"
+      #when: release_change_type_id == "1"
+      tags: branch
+
+    - name: Push sos branch remotely to have the tag
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git push origin sos --tags'
+
+#    - name: Show the difference between the bug-fix and version_to_patch 
+#      shell: "{{item}}"
+#      with_items:
+#        - 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git diff HEAD {{version_to_patch}}'
+
+    - name: Remove branch
       shell: "{{item}}"
       with_items:
-        - 'git diff HEAD {{prod_version_to_patch}}'
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}; rm -rf .branch_sos'
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git worktree prune'
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git branch -D sos'
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git push origin :sos'
+      tags: rm_branch
 
 #    - name: Show difference between new and old version
 #      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git diff {{new_tag.stdout}} {{latest_tag.stdout}}'

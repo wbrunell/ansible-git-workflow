@@ -12,7 +12,7 @@ release_change_type: minor
 file_selection: .
 
 # Default values only for Workflow_2
-prod_version_to_patch: 1.0.0
+version_to_patch: 1.0.0
 
 # Possible values for the variables are:
 # release_change_type: major|minor|patch

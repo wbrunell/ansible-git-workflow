@@ -28,6 +28,14 @@
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git pull; /usr/local/bin/git clean -f'
       when: dir.stat.exists == true
       #debug: msg="repo_dirname = {{repo_dir_name}}"
+
+    - name: Check if branch Directory exists
+      stat: path={{local_base_dir}}/{{repo_dir_name}}/.branch_sos
+      register: branchdir
+    - name: Remove the branch directory (if it is already there)
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; rm -rf .branch_sos; git worktree prune; git branch -D sos'
+      when: branchdir.stat.exists == true
+
     - name: Create directory if it does not exist and clone from Github
       git: repo={{repo_url}} dest={{local_base_dir}}/{{repo_dir_name}}
       when: dir.stat.exists == false
@@ -45,50 +53,5 @@
     - name: Create Starting Tag 1.0.0 and push everything to Github
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag -a 1.0.0 -m "Starting Version"; git push origin master --tags'
       
-#    - name: Find latest version (tag)
-#      shell: git describe --abbrev=0 --tags chdir=/tmp/{{stream_feed}}
-#      register: latest_tag  
-#    - name: Create tar.gz Archive for RPM package (excluding .git directory)
-#      shell: /usr/bin/tar czf /tmp/{{stream_feed}}.tar.gz ./{{stream_feed}} --exclude ./{{stream_feed}}/.git chdir=/tmp warn=false
-#    - name: Cleanup the old rpmbuild structure
-#      file: path=~/rpmbuild state=absent
-#    - name: Create the rpmbuild structure
-#      file: path=~/{{ item }} state=directory
-#      with_items:
-#        - rpmbuild/SPECS
-#        - rpmbuild/SOURCES
-#        - rpmbuild/BUILD
-#        - rpmbuild/RPMS
-#    - name: Copy the tar.gz archive to the rpmbuild structure
-#      command: cp /tmp/{{stream_feed}}.tar.gz ~/rpmbuild/SOURCES
-#    - name: Copy the spec-file template
-#      template: src=templates/rpm_spec_mit_version.spec dest=~/rpmbuild/SPECS 
-#    - name: Build the RPM package. The finished package will be ~rpmbuild/rpmbuild/RPMS/noarch/{{stream_feed}}-{{latest_tag.stdout[1:]}}-0.noarch.rpm
-#      command: rpmbuild -vv -bb ~/rpmbuild/SPECS/rpm_spec_mit_version.spec --clean
-#    - name: Copy RPM package to the TML repository
-#      shell: scp /home/dsfrpmbuild/rpmbuild/RPMS/noarch/{{stream_feed}}-{{latest_tag.stdout[1:]}}-0.noarch.rpm cos020:/var/www/html/dsf_tml
-
-#- name: Update TML Repo
-#  hosts: cos020
-#  become_user: dsfrpmbuild
-#  become: yes
-#  tasks:
-#    - name: Update repo
-#      shell: "createrepo /var/www/html/dsf_tml --update"
-#
-#- name: Install on DEV server
-#  hosts: dsf_dev
-#  become_user: root
-#  become: yes
-#  vars:
-#    stream_feed: "{{ repo_name | default('dsf-pseudo-xxx') }}"
-#  tasks:
-#    - name: Make yum cache expire in order to re-read updated reposerver metadata
-#      shell: yum clean expire-cache warn=no
-#    - name: Update repo metadata
-#      shell: yum repolist warn=no
-#    - name: Install package
-#      #yum: name={{stream_feed}}-{{hostvars.cos019.latest_tag.stdout[1:]}}-0.noarch state=present
-#      yum: name={{stream_feed}} state=latest
 
 
