@@ -1,0 +1,116 @@
+#
+# What : Playbook to clean and prepare the repo for the Poc of the Git Workflow
+#	 This includes :	- remove all files
+#				- remove all tags
+#				- remove all branches
+#				- create new empty files t1 t2 t3 t4
+#
+# Date : 17.May 2018 Walter Brunelli
+#
+# Usage: ansible-playbook pl_dsf_git_workflow_clean_repo.yml
+#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "repo_url=https://github.com/wbrunell/repo01"
+#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "repo_dir_name=repo01"
+#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "local_base_dir=/var/tmp"
+#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "release_change_type: {major|minor|patch}"
+#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "file_selection=<file>"
+#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "prod_version_to_patch==<tag|version>"
+
+---
+- name: pl_dsf_git_workflow_3_c_file_selection_sos_add_commit_cherry_pick_2tag_push.yml
+  hosts: localhost
+  become_user: none
+  become: no
+  vars_files:
+    - pl_dsf_git_workflow_all_setupvariables.yml
+  # Prompt the user what kind of release change it is (major|mionor|patch)
+  vars_prompt:
+    - name: release_change_type_id
+      prompt: "What kind of change are you about to release ? \nRequired to identify which field of the version number will be increased. \n1- major\n2- minor\n3- patch"
+
+  tasks:
+    ## Do some checks before starting
+    - name: Check if Directory exists
+      stat: path={{local_base_dir}}/{{repo_dir_name}}/.git
+      register: dir
+
+    - name: Exit if directory does not exists
+      fail: msg="Local directory {{local_base_dir}}/{{repo_dir_name}} does not exist. Exiting."  
+      when: dir.stat.exists == false
+
+    - name: Check if there is something to add and commit
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git diff --exit-code >/dev/null 2>&1'
+      failed_when: false
+      ignore_errors: true
+      register: result
+
+    - debug: msg="Exiting Playbook. There are no changes in the working directory. Status is clean"
+      when: result.rc == 0
+    - name: End Play if there are no changes in the Working-Dir
+      meta: end_play
+      when: result.rc == 0
+
+    - name: Check if there is already an sos-Branch
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git branch --list | grep sos >/dev/null 2>&1'
+      failed_when: false
+      ignore_errors: true
+      register: result_sos_branch
+
+    - debug: msg="Exiting Playbook. There is already an sos Branch. Please clean up."
+      when: result_sos_branch.rc == 0
+    - name: End Play because there is already an sos Branch existing.
+      meta: end_play
+      when: result_sos_branch.rc == 0
+
+    ## Start the real work
+    - name: Add and commit changes of a (or more) specific files to master branch
+      shell: "{{item}} chdir={{local_base_dir}}/{{repo_dir_name}}"
+      with_items:
+        - 'git add {{file_selection}}'
+        - 'git commit -m "Commit changes"'
+        - 'git push origin master'
+
+    - name: Get the commit-hash
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git log --pretty=oneline -1 --pretty=format:"%h"' 
+      register: commit_in_master
+
+#    - name: Find latest version (tag) in master branch
+#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git describe --abbrev=0 --tags chdir={{local_base_dir}}/{{repo_dir_name}}'
+#      register: latest_tag  
+
+#    - name: Print latest tag in master branch
+#      debug: var=latest_tag.stdout
+
+#    - name: Set new Git tag in master branch - patch number increase 
+#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag -a {{item}} -m "{{item}}"'
+#      with_items:
+#        - "{{latest_tag.stdout.split('.')[0]}}.{{latest_tag.stdout.split('.')[1]}}.{{latest_tag.stdout.split('.')[2] | int + 1}}"
+#      when: release_change_type_id == "1"
+
+#    - name: Push commits and tag to Github
+#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git push origin master --tags'
+
+#    - name: Find new version (tag) in master branch
+#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git describe --abbrev=0 --tags chdir={{local_base_dir}}/{{repo_dir_name}}'
+#      register: new_tag  
+
+#    - name: Print new tag in master branch
+#      debug: var=new_tag.stdout
+
+    ## Create sos Branch
+
+    - name: Create sos-Branch out of prod-Version/Tag
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git branch sos {{prod_version_to_patch}}'
+
+    - name: Switch to sos Branch and cherry-pick the sos-commit-change
+      shell: "{{item}}"
+      with_items:
+        - 'git worktree add .branch_sos sos chdir={{local_base_dir}}/{{repo_dir_name}}'
+        - 'git cherry-pick {{commit_in_master.stdout} chdir={{local_base_dir}}/{{repo_dir_name}}/.branch_sos}'
+
+    - name: Show the difference between the bug-fix of prod-version vs prod-version
+      shell: "{{item}}"
+      with_items:
+        - 'git diff HEAD {{prod_version_to_patch}}'
+
+#    - name: Show difference between new and old version
+#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git diff {{new_tag.stdout}} {{latest_tag.stdout}}'

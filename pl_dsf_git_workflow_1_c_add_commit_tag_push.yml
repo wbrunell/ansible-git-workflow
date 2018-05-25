@@ -38,9 +38,13 @@
       ignore_errors: true
       register: result
 
+    - debug: msg="Exiting Playbook. There are no changes in the working directory. Status is clean"
+    - name: End Play if there are no changes in the Working-Dir
+      meta: end_play
+      when: result.rc == 0
+
     - name: Add and commit changes 
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git add . ; /usr/local/bin/git commit -m "Commit changes"'
-      when: result.rc != 0
 
     - name: Find latest version (tag)
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git describe --abbrev=0 --tags chdir={{local_base_dir}}/{{repo_dir_name}}'
@@ -48,25 +52,6 @@
 
     - name: Print latest tag
       debug: var=latest_tag.stdout
-
-#    - name: Increase Version number (major)
-#      shell: echo {{latest_tag.stdout.split('.')[0] | int + 1}}.{{latest_tag.stdout.split('.')[1]}}.{{latest_tag.stdout.split('.')[2]}}
-#      register: new_tag
-#      when: ( release_change_type_id == "1" )
-
-#    - name: Increase Version number (minor)
-#      shell: echo {{latest_tag.stdout.split('.')[0]}}.{{latest_tag.stdout.split('.')[1] | int + 1}}.{{latest_tag.stdout.split('.')[2]}}
-#      register: new_tag
-#      when: ( release_change_type_id == "2" )
-
-#    - name: Increase Version number (patch)
-#      shell: echo {{latest_tag.stdout.split('.')[0]}}.{{latest_tag.stdout.split('.')[1]}}.{{latest_tag.stdout.split('.')[2] | int + 1}}
-#      register: new_tag
-#        set_on_skipped_task: false
-#      when: ( release_change_type_id == "3" )
-
-#    - name: Print new tag
-#      debug: var=new_tag.stdout
 
     - name: Print major
       debug: msg="{{latest_tag.stdout.split('.')[0]}}"
@@ -81,20 +66,19 @@
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag -a {{item}} -m "{{item}}"'
       with_items:
         - "{{latest_tag.stdout.split('.')[0] | int + 1}}.0.0"
-      when: release_change_type_id == "1"  and  result.rc != 0
+      when: release_change_type_id == "1"
 
     - name: Set new Git tag - minor number increase
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag -a {{item}} -m "{{item}}"'
       with_items:
         - "{{latest_tag.stdout.split('.')[0]}}.{{latest_tag.stdout.split('.')[1] | int + 1}}.0"
-      when: release_change_type_id == "2"  and  result.rc != 0
+      when: release_change_type_id == "2"
 
     - name: Set new Git tag - patch number increase
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag -a {{item}} -m "{{item}}"'
       with_items:
         - "{{latest_tag.stdout.split('.')[0]}}.{{latest_tag.stdout.split('.')[1]}}.{{latest_tag.stdout.split('.')[2] | int + 1}}"
-      when: release_change_type_id == "3"  and  result.rc != 0
+      when: release_change_type_id == "3"
 
     - name: Push commits and tag to Github
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git push origin master --tags'
-      when: result.rc != 0
