@@ -35,13 +35,15 @@
       fail: msg="Local directory {{local_base_dir}}/{{repo_dir_name}} does not exist. Exiting."  
       when: dir.stat.exists == false
 
-    - name: Check if there is something to add and commit
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git diff --exit-code >/dev/null 2>&1'
+    - name: Check if there are changes to add and commit
+      # shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git diff --exit-code >/dev/null 2>&1'
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git ls-files --other -m --exclude-standard | wc -l | grep 0 >/dev/null 2>&1'
       failed_when: false
       ignore_errors: true
       register: result
 
     - debug: msg="Exiting Playbook. There are no changes in the working directory. Status is clean"
+      when: result.rc == 0
     - name: End Play if there are no changes in the Working-Dir
       meta: end_play
       when: result.rc == 0
