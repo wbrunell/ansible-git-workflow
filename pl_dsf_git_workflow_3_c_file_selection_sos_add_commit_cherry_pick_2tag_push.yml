@@ -14,7 +14,7 @@
 #	 ansible-playbook ${0} -e "repo_dir_name=repo01"
 #	 ansible-playbook ${0} -e "local_base_dir=/var/tmp"
 #	 ansible-playbook ${0} -e "release_change_type: {major|minor|patch}"
-#	 ansible-playbook ${0} -e "file_selection=<file>"
+#	 ansible-playbook ${0} -e "file_selection=<file>"			# Default: . (all-changes)
 #	 ansible-playbook ${0} -e "version_to_patch=<tag|version>"		# Default: 1.0.0
 
 ---
