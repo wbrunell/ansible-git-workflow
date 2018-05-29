@@ -7,7 +7,7 @@
 # Date : 01.March 2018 Walter Brunelli
 #
 # Usage:
-#	ansible-playbook pl_dsf_rpm_remove_on_dev_test_prod.yml  --extra-vars "stream_feed_name=dsf-feeds-F1F dsf_env=dsf_dev|host"
+#	ansible-playbook ${0}.yml  -e "stream_feed_name=dsf-feeds-F1F dsf_env=dsf_dev|host"
 
 ---
 - name: Remove RPM on server in a certain environment

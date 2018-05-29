@@ -8,10 +8,10 @@ local_base_dir: /var/tmp
 repo_dir_name: repo01
 release_change_type: minor
 
-# Default values only for Workflow_2
+# Default values only for Workflow_2 and 3
 file_selection: .
 
-# Default values only for Workflow_2
+# Default values only for Workflow_3
 version_to_patch: 1.0.0
 
 # Possible values for the variables are:

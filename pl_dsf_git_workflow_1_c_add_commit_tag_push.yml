@@ -8,11 +8,11 @@
 # Date : 17.May 2018 Walter Brunelli
 #
 # Usage: ansible-playbook ${0}.yml
-#	 ansible-playbook ${0}.yml --extra-vars "repo_url=https://github.com/wbrunell/repo01"
-#	 ansible-playbook ${0}.yml --extra-vars "repo_dir_name=repo01"
-#	 ansible-playbook ${0}.yml --extra-vars "local_base_dir=/var/tmp"
-#	 ansible-playbook ${0}.yml --extra-vars "release_change_type: {major|minor|patch}"
-#	 ansible-playbook ${0}.yml --extra-vars "file_selection=<file1 file2 ..>"		# Default is: . (all changes)
+#	 ansible-playbook ${0}.yml -e "repo_url=https://github.com/wbrunell/repo01"
+#	 ansible-playbook ${0}.yml -e "repo_dir_name=repo01"
+#	 ansible-playbook ${0}.yml -e "local_base_dir=/var/tmp"
+#	 ansible-playbook ${0}.yml -e "release_change_type: {major|minor|patch}"
+#	 ansible-playbook ${0}.yml -e "file_selection=<file1 file2 ..>"		# Default is: . (all changes)
 
 ---
 - name: Clean the repo-directory
@@ -30,7 +30,6 @@
     - name: Check if Directory exists
       stat: path={{local_base_dir}}/{{repo_dir_name}}/.git
       register: dir
-
     - name: Exit if directory does not exists
       fail: msg="Local directory {{local_base_dir}}/{{repo_dir_name}} does not exist. Exiting."  
       when: dir.stat.exists == false
@@ -41,7 +40,6 @@
       failed_when: false
       ignore_errors: true
       register: result
-
     - debug: msg="Exiting Playbook. There are no changes in the working directory. Status is clean"
       when: result.rc == 0
     - name: End Play if there are no changes in the Working-Dir

@@ -10,12 +10,12 @@
 # Date : 17.May 2018 Walter Brunelli
 #
 # Usage: ansible-playbook ${0}
-#	 ansible-playbook ${0} --extra-vars "repo_url=https://github.com/wbrunell/repo01"
-#	 ansible-playbook ${0} --extra-vars "repo_dir_name=repo01"
-#	 ansible-playbook ${0} --extra-vars "local_base_dir=/var/tmp"
-#	 ansible-playbook ${0} --extra-vars "release_change_type: {major|minor|patch}"
-#	 ansible-playbook ${0} --extra-vars "file_selection=<file>"
-#	 ansible-playbook ${0} --extra-vars "version_to_patch=<tag|version>"		# Default: 1.0.0
+#	 ansible-playbook ${0} -e "repo_url=https://github.com/wbrunell/repo01"
+#	 ansible-playbook ${0} -e "repo_dir_name=repo01"
+#	 ansible-playbook ${0} -e "local_base_dir=/var/tmp"
+#	 ansible-playbook ${0} -e "release_change_type: {major|minor|patch}"
+#	 ansible-playbook ${0} -e "file_selection=<file>"
+#	 ansible-playbook ${0} -e "version_to_patch=<tag|version>"		# Default: 1.0.0
 
 ---
 - name: pl_dsf_git_workflow_3_c_file_selection_sos_add_commit_cherry_pick_2tag_push.yml
@@ -34,7 +34,6 @@
     - name: Check if Directory exists
       stat: path={{local_base_dir}}/{{repo_dir_name}}/.git
       register: dir
-
     - name: Exit if directory does not exists
       fail: msg="Local directory {{local_base_dir}}/{{repo_dir_name}} does not exist. Exiting."  
       when: dir.stat.exists == false
@@ -45,7 +44,6 @@
       failed_when: false
       ignore_errors: true
       register: result
-
     - debug: msg="Exiting Playbook. There are no changes in the working directory. Status is clean"
       when: result.rc == 0
     - name: End Play if there are no changes in the Working-Dir
@@ -75,7 +73,6 @@
     - name: Get the commit-hash
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git log --pretty=oneline -1 --pretty=format:"%h"' 
       register: commit_in_master
-
 
     ## Create sos Branch
 

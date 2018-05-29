@@ -6,9 +6,9 @@
 #
 # Date : 26.Feb.2018 Walter Brunelli
 #
-# Usage: ansible-playbook pl_dsf_clone_from_git_build_rpm_deploy_to_tml_install_in_dev_test.yml
-#	 ansible-playbook pl_dsf_clone_from_git_build_rpm_deploy_to_tml_install_in_dev_test.yml --extra-vars "stream_feed_name=dsf-feeds-F1F"
-#        ansible-playbook pl_dsf_clone_from_git_build_rpm_deploy_to_tml_install_in_dev_test.yml --extra-vars "stream_feed_name=dsf-streams-f1f"
+# Usage: ansible-playbook $0}.yml
+#	 ansible-playbook $0}.yml -e "stream_feed_name=dsf-feeds-F1F"
+#        ansible-playbook $0}.yml -e "stream_feed_name=dsf-streams-f1f"
 
 
 ---

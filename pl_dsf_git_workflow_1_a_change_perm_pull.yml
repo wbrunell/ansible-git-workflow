@@ -8,9 +8,9 @@
 # Date : 17.May 2018 Walter Brunelli
 #
 # Usage: ansible-playbook pl_dsf_git_workflow_clean_repo.yml
-#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "repo_url=https://github.com/wbrunell/repo01"
-#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "repo_dir_name=repo01"
-#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml --extra-vars "local_base_dir=/var/tmp"
+#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml -e "repo_url=https://github.com/wbrunell/repo01"
+#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml -e "repo_dir_name=repo01"
+#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml -e "local_base_dir=/var/tmp"
 
 ---
 - name: Clean the repo-directory
