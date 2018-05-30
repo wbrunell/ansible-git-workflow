@@ -50,12 +50,22 @@
       meta: end_play
       when: result.rc == 0
 
+    - name: Check that the selected file(s) exists and has/have been updated or is/are new to Git (untracked)
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git ls-files --other -m --exclude-standard --error-unmatch {{file_selection}} >/dev/null 2>&1'
+      failed_when: false
+      ignore_errors: true
+      register: result
+    - debug: msg="Exiting Playbook. The given file(s) {{file_selection}} does/do not exist or is not being modified"
+      when: result.rc != 0
+    - name: End Play if there are no changes in the Working-Dir
+      meta: end_play
+      when: result.rc != 0
+
     - name: Check if there is already an sos-Branch
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git branch --list | grep sos >/dev/null 2>&1'
       failed_when: false
       ignore_errors: true
       register: result_sos_branch
-
     - debug: msg="Exiting Playbook. There is already an sos Branch. Please clean up."
       when: result_sos_branch.rc == 0
     - name: End Play because there is already an sos Branch existing.

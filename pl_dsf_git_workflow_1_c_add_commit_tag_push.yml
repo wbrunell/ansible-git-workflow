@@ -27,6 +27,7 @@
       prompt: "What kind of change are you about to release ? \nRequired to identify which field of the version number will be increased. \n1- major\n2- minor\n3- patch"
 
   tasks:
+  ## Do some checks
     - name: Check if Directory exists
       stat: path={{local_base_dir}}/{{repo_dir_name}}/.git
       register: dir
@@ -46,6 +47,18 @@
       meta: end_play
       when: result.rc == 0
 
+    - name: Check that the selected file(s) exists and has/have been updated or is/are new to Git (untracked)
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git ls-files --other -m --exclude-standard --error-unmatch {{file_selection}} >/dev/null 2>&1'
+      failed_when: false
+      ignore_errors: true
+      register: result
+    - debug: msg="Exiting Playbook. The given file(s) {{file_selection}} does/do not exist or is not being modified"
+      when: result.rc != 0
+    - name: End Play if there are no changes in the Working-Dir
+      meta: end_play
+      when: result.rc != 0
+    
+    ## Do the real work
     - name: Add and commit changes 
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git add {{file_selection}} ; /usr/local/bin/git commit -m "Commit changes"'
 
