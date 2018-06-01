@@ -1,0 +1,20 @@
+---
+- name: pl_dsf_git_workflow_3_c_file_selection_sos_add_commit_cherry_pick_2tag_push.yml
+  hosts: localhost
+  become_user: none
+  become: no
+  vars_files:
+    - pl_dsf_git_workflow_all_setupvariables.yml
+
+  tasks:
+    - name: List all files which have a conflict during the cherry-pick operation
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git diff --name-only --diff-filter=U'
+      register: conflict_files
+    - debug: var=conflict_files
+    - debug:
+        msg:
+          - "Exiting Playbook. There is a merge-conflict during the cherry-pick operarion."
+          - "Pls go into .branch_sos and fix the conflict in file"
+          - "    {{ conflict_files.stdout}}"
+          - "Then execute and run 'git add <file>; git cherry-pick --continue --empty-message')"
+          - "To Abort the whole thing: use 'git cherry-pick --abort' to cancel the cherry-pick operation)"

@@ -10,21 +10,17 @@
 # Date : 17.May 2018 Walter Brunelli
 #
 # Usage: ansible-playbook ${0}
-#	 ansible-playbook ${0} -e "repo_url=https://github.com/wbrunell/repo01"
 #	 ansible-playbook ${0} -e "repo_dir_name=repo01"
 #	 ansible-playbook ${0} -e "local_base_dir=/var/tmp"
-#	 ansible-playbook ${0} -e "release_change_type: {major|minor|patch}"
-#	 ansible-playbook ${0} -e "file_selection=<file>"			# Default: . (all-changes)
-#	 ansible-playbook ${0} -e "version_to_patch=<tag|version>"		# Default: 1.0.0
 
 ---
-- name: pl_dsf_git_workflow_3_c_file_selection_sos_add_commit_cherry_pick_2tag_push.yml
+- name: pl_dsf_git_workflow_3_c_resolv_cherry_pick_conflict_tag_push.yml.yml
   hosts: localhost
   become_user: none
   become: no
   vars_files:
     - pl_dsf_git_workflow_all_setupvariables.yml
-  # Prompt the user what kind of release change it is (major|mionor|patch)
+#   Prompt the user what kind of release change it is (major|mionor|patch)
 #  vars_prompt:
 #    - name: release_change_type_id
 #      prompt: "What kind of change are you about to release ? \nRequired to identify which field of the version number will be increased. \n1- major\n2- minor\n3- patch"
@@ -94,25 +90,15 @@
       with_items:
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git worktree add .branch_sos sos' 
         - 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git cherry-pick {{commit_in_master.stdout}}'
-      failed_when: false
-      ignore_errors: true
+      #failed_when: false
+      #ignore_errors: true
       register: result_cherry_pick
-    - debug: var=result_cherry_pick.results[1].rc
-    - name: List all files which have a conflict during the cherry-pick operation             
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git diff --name-only --diff-filter=U'     
-      register: conflict_files
-      when: result_cherry_pick.results[1].rc != "0"
-    - debug: 
-        msg:
-          - "Exiting Playbook. There is a merge-conflict during the cherry-pick operarion."
-          - "Pls go into .branch_sos and fix the conflict in file(s) :"
-          - "    {{ conflict_files.stdout}}"
-          - "Then execute and run 'git add <file>; git cherry-pick --continue --empty-message')"
-          - "To Abort the whole thing: use 'git cherry-pick --abort' to cancel the cherry-pick operation)"
-      when: result_cherry_pick.results[1].rc != "0"
+    - debug: var=result_cherry_pick.rc
+    - debug: msg="Exiting Playbook. There is a merge-conflict during the cherry-pick operarion. \nPls go into .branch_sos and fix the conflict. \nThen execute and run 'git add <file>; git cherry-pick --continue --ampty-message') (use 'git cherry-pick --abort' to cancel the cherry-pick operation)"
+      when: result_cherry_pick.rc != 0
     - name: End Play because there is a conflict duting the cherry-pick-merge into sos-branch
       meta: end_play
-      when: result_cherry_pick.results[1].rc != "0"
+      when: result_sos_branch.rc != 0
 
     - name: Tag the bug-fixed version in sos branch and push to Github
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; /usr/local/bin/git tag -a {{item}} -m "This is Version {{item}}"'

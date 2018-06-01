@@ -42,7 +42,7 @@
     - name: Remove all tags remotely and locally
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag | xargs -n 1 git push -d origin; git tag | xargs git tag -d'
     - name: Remove all local files and directories, create empty files t1-4, push to remote
-      shell: "rm -f {{local_base_dir}}/{{repo_dir_name}}/*"
+      shell: "rm -rf {{local_base_dir}}/{{repo_dir_name}}/*"
     - name: Create empty files t1-4, commit and push to remote
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; touch {{ item }}; git add .; git commit -m "Reset all files"'
       with_items:
@@ -53,5 +53,7 @@
     - name: Create Starting Tag 1.0.0 and push everything to Github
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag -a 1.0.0 -m "Starting Version"; git push origin master --tags'
       
-
+    - name: Create .gitignore and push to Github
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; echo ".branch_sos" > .gitignore; git add .; git push origin master --tags'
+      
 

@@ -1,0 +1,18 @@
+#	 ansible-playbook ${0} -e "version_to_patch=<tag|version>"		# Default: 1.0.0
+
+---
+- name: pl_dsf_git_workflow_3_c_file_selection_sos_add_commit_cherry_pick_2tag_push.yml
+  hosts: localhost
+  become_user: none
+  become: no
+
+  tasks:
+    - name: Execute cmds            
+      shell: '{{item}}'
+      with_items:
+        - "ls /var/tmp > /dev/null"
+        - "ls . > /dev/null"
+      register: result
+    - debug: var=result verbosity=1
+    - debug: var=result.results[0].rc verbosity=1
+
