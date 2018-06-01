@@ -1,17 +1,9 @@
-#
-# What : Playbook to push changes into GITHUB
-#	 This includes :	- Changes on old code version (Parapeter version_to_patch)
-#				- Changes to current version
-#        Tasks ececuted:	- git add / git commit
-#				- calculate and apply new tag 
-#				- push to Github
-#				- Same for old code version (Parameter version_to_patch)
-#
 # Date : 17.May 2018 Walter Brunelli
 #
 # Usage: ansible-playbook ${0}
-#	 ansible-playbook ${0} -e "repo_dir_name=repo01"
-#	 ansible-playbook ${0} -e "local_base_dir=/var/tmp"
+#        ansible-playbook ${0} -e "repo_url=https://github.com/wbrunell/repo01"
+#        ansible-playbook ${0} -e "repo_dir_name=repo01"
+#        ansible-playbook ${0} -e "local_base_dir=/var/tmp"
 
 ---
 - name: pl_dsf_git_workflow_3_c_resolv_cherry_pick_conflict_tag_push.yml.yml
@@ -20,42 +12,14 @@
   become: no
   vars_files:
     - pl_dsf_git_workflow_all_setupvariables.yml
-#   Prompt the user what kind of release change it is (major|mionor|patch)
-#  vars_prompt:
-#    - name: release_change_type_id
-#      prompt: "What kind of change are you about to release ? \nRequired to identify which field of the version number will be increased. \n1- major\n2- minor\n3- patch"
-
   tasks:
-    ## Do some checks before starting
+  ## Do some checks before starting
     - name: Check if Directory exists
-      stat: path={{local_base_dir}}/{{repo_dir_name}}/.git
+      stat: path={{local_base_dir}}/{{repo_dir_name}}/.branch_sos/.git
       register: dir
     - name: Exit if directory does not exists
-      fail: msg="Local directory {{local_base_dir}}/{{repo_dir_name}} does not exist. Exiting."  
+      fail: msg="Local directory {{local_base_dir}}/{{repo_dir_name}} does not exist. Exiting."
       when: dir.stat.exists == false
-
-    - name: Check if there is something to add and commit
-      # shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git diff --exit-code >/dev/null 2>&1'
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git ls-files --other -m --exclude-standard | wc -l | grep 0 >/dev/null 2>&1'
-      failed_when: false
-      ignore_errors: true
-      register: result
-    - debug: msg="Exiting Playbook. There are no changes in the working directory. Status is clean"
-      when: result.rc == 0
-    - name: End Play if there are no changes in the Working-Dir
-      meta: end_play
-      when: result.rc == 0
-
-    - name: Check that the selected file(s) exists and has/have been updated or is/are new to Git (untracked)
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git ls-files --other -m --exclude-standard --error-unmatch {{file_selection}} >/dev/null 2>&1'
-      failed_when: false
-      ignore_errors: true
-      register: result
-    - debug: msg="Exiting Playbook. The given file(s) {{file_selection}} does/do not exist or is not being modified"
-      when: result.rc != 0
-    - name: End Play if there are no changes in the Working-Dir
-      meta: end_play
-      when: result.rc != 0
 
     - name: Check if there is already an sos-Branch
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git branch --list | grep sos >/dev/null 2>&1'
@@ -63,54 +27,45 @@
       ignore_errors: true
       register: result_sos_branch
     - debug: msg="Exiting Playbook. There is already an sos Branch. Please clean up."
-      when: result_sos_branch.rc == 0
+      when: result_sos_branch.rc != 0
     - name: End Play because there is already an sos Branch existing.
-      meta: end_play
-      when: result_sos_branch.rc == 0
-
-    ## Start the real work
-    - name: Add and commit changes of a (or more) specific files to master branch
-      shell: "{{item}} chdir={{local_base_dir}}/{{repo_dir_name}}"
-      with_items:
-        - 'git add {{file_selection}}'
-        - 'git commit -m "Commit changes"'
-        - 'git push origin master --tags'
-
-    - name: Get the commit-hash
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git log --pretty=oneline -1 --pretty=format:"%h"' 
-      register: commit_in_master
-
-    ## Create sos Branch
-
-    - name: Create sos-Branch out of prod-Version/Tag
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git branch sos {{version_to_patch}}'
-
-    - name: Switch to sos Branch and cherry-pick the sos-commit-change
-      shell: "{{item}}"
-      with_items:
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git worktree add .branch_sos sos' 
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git cherry-pick {{commit_in_master.stdout}}'
-      #failed_when: false
-      #ignore_errors: true
-      register: result_cherry_pick
-    - debug: var=result_cherry_pick.rc
-    - debug: msg="Exiting Playbook. There is a merge-conflict during the cherry-pick operarion. \nPls go into .branch_sos and fix the conflict. \nThen execute and run 'git add <file>; git cherry-pick --continue --ampty-message') (use 'git cherry-pick --abort' to cancel the cherry-pick operation)"
-      when: result_cherry_pick.rc != 0
-    - name: End Play because there is a conflict duting the cherry-pick-merge into sos-branch
       meta: end_play
       when: result_sos_branch.rc != 0
 
-    - name: Tag the bug-fixed version in sos branch and push to Github
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; /usr/local/bin/git tag -a {{item}} -m "This is Version {{item}}"'
+    ## Start the real work
+    - name: List all files which have a conflict during the cherry-pick operation
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git diff --name-only --diff-filter=U | xargs'
+      register: conflict_files
+
+    - name: Exit if there are no conflict files
+    - debug:
+        msg:
+          - "Exiting Playbook. There are no conflict files to resolv a conflict"
+          - "    {{ conflict_files.stdout}}"
+      when: conflict_files.stdsout == ""
+    - name: End Play because there is a conflict duting the cherry-pick-merge into sos-branch
+      meta: end_play
+      when: conflict_files.stdsout == ""
+
+    - name: Add and commit the file(s) in which the conflict was resolved
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git add {{ conflict_files.stdout }}; git commit -m "Committing files with conflict resolution"'
+
+    - name: Find the last tag in the sos-Branch (which is the version_to_patch in PROD)
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git describe --abbrev=0 --tags'
+      register: latest_tag_sos_branch
+
+    - name: Print latest tag in sos branch
+      debug: var=latest_tag_sos.stdout
+
+    - name: Set new Git tag in sos branch - patch number increase
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; /usr/local/bin/git tag -a {{item}} -m "{{item}}"'
       with_items:
-        - "{{version_to_patch.split('.')[0]}}.{{version_to_patch.split('.')[1]}}.{{version_to_patch.split('.')[2] | int + 1}}"
-      #when: release_change_type_id == "1"
-      tags: branch
+        - "{{latest_tag_sos.stdout.split('.')[0]}}.{{latest_tag_sos.stdout.split('.')[1]}}.{{latest_tag_sos.stdout.split('.')[2] | int + 1}}"
 
-    - name: Push sos branch remotely to have the tag
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git push origin sos --tags'
+    - name: Push commits and tags to Github
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; /usr/local/bin/git push origin sos --tags'
 
-    - name: Remove branch
+    - name: Remove sos branch
       shell: "{{item}}"
       with_items:
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; rm -rf .branch_sos'
@@ -119,24 +74,3 @@
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git push origin :sos'
       tags: rm_branch
 
-    - name: Find latest version (tag) in master branch
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git describe --abbrev=0 --tags chdir={{local_base_dir}}/{{repo_dir_name}}'
-      register: latest_tag  
-
-    - name: Print latest tag in master branch
-      debug: var=latest_tag.stdout
-
-    - name: Set new Git tag in master branch - minor number increase 
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag -a {{item}} -m "{{item}}"'
-      with_items:
-        - "{{latest_tag.stdout.split('.')[0]}}.{{latest_tag.stdout.split('.')[1]}}.{{latest_tag.stdout.split('.')[2] | int + 1}}"
-
-    - name: Push commits and tag to Github
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git push origin master --tags'
-
-#    - name: Find new version (tag) in master branch
-#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git describe --abbrev=0 --tags chdir={{local_base_dir}}/{{repo_dir_name}}'
-#      register: new_tag  
-
-#    - name: Print new tag in master branch
-#      debug: var=new_tag.stdout
