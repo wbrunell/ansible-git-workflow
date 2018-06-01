@@ -38,21 +38,21 @@
       register: conflict_files
 
     - name: Exit if there are no conflict files
-    - debug:
+      debug:
         msg:
           - "Exiting Playbook. There are no conflict files to resolv a conflict"
           - "    {{ conflict_files.stdout}}"
-      when: conflict_files.stdsout == ""
+      when: conflict_files.stdout == ""
     - name: End Play because there is a conflict duting the cherry-pick-merge into sos-branch
       meta: end_play
-      when: conflict_files.stdsout == ""
+      when: conflict_files.stdout == ""
 
     - name: Add and commit the file(s) in which the conflict was resolved
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git add {{ conflict_files.stdout }}; git commit -m "Committing files with conflict resolution"'
 
     - name: Find the last tag in the sos-Branch (which is the version_to_patch in PROD)
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git describe --abbrev=0 --tags'
-      register: latest_tag_sos_branch
+      register: latest_tag_sos
 
     - name: Print latest tag in sos branch
       debug: var=latest_tag_sos.stdout
