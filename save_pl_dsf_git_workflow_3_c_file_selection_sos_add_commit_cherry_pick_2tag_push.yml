@@ -72,15 +72,6 @@
       meta: end_play
       when: result_sos_branch.rc == 0
 
-    - name: Check that version_to_patch exists. Find all git tags
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag'
-      register: all_git_tags
-    - debug: msg="Exiting Playbook. There is no such version to patch {{version_to_patch}}"
-      when: not("{{version_to_patch}}" in all_git_tags.stdout_lines)  or  version_to_patch is undefined
-    - name: End Play because version to patch {{version_to_patch}}    
-      meta: end_play
-      when: not("{{version_to_patch}}" in all_git_tags.stdout_lines)  or  version_to_patch is undefined
-
     ## Start the real work
     - name: Add and commit changes of a (or more) specific files to master branch
       shell: "{{item}} chdir={{local_base_dir}}/{{repo_dir_name}}"
@@ -109,6 +100,7 @@
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git push origin master --tags'
 
     ## Create sos Branch
+
     - name: Create sos-Branch out of prod-Version/Tag
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git branch sos {{version_to_patch}}'
 
@@ -139,22 +131,10 @@
       meta: end_play
       when: result_cherry_pick.results[1].rc != 0
 
-    # Tag the commit in the sos Branch
-    - name: Get list of all tags
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag'
-      register: all_git_tags
-
-    - name: Find next free patch number
-      set_fact: counter={{item | int + 1}}
-      when:  ("{{version_to_patch.split('.')[0]}}.{{version_to_patch.split('.')[1]}}.{{item}}" in all_git_tags.stdout_lines)
-      with_sequence: start={{version_to_patch.split('.')[2]}} end=10
-
-    - debug: var=counter
-
     - name: Tag the bug-fixed version in sos branch and push to Github
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; /usr/local/bin/git tag -a {{item}} -m "This is Version {{item}}"'
       with_items:
-        - "{{version_to_patch.split('.')[0]}}.{{version_to_patch.split('.')[1]}}.{{counter}}"
+        - "{{version_to_patch.split('.')[0]}}.{{version_to_patch.split('.')[1]}}.{{version_to_patch.split('.')[2] | int + 1}}"
 
     - name: Push sos branch remotely to have the tag
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git push origin sos --tags'
@@ -168,3 +148,10 @@
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git push origin :sos'
       tags: rm_branch
 
+
+#    - name: Find new version (tag) in master branch
+#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git describe --abbrev=0 --tags chdir={{local_base_dir}}/{{repo_dir_name}}'
+#      register: new_tag  
+
+#    - name: Print new tag in master branch
+#      debug: var=new_tag.stdout

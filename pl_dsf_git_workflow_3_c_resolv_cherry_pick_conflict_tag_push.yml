@@ -21,22 +21,20 @@
       fail: msg="Local directory {{local_base_dir}}/{{repo_dir_name}} does not exist. Exiting."
       when: dir.stat.exists == false
 
-    - name: Check if there is already an sos-Branch
+    - name: Check if there is an sos-Branch
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git branch --list | grep sos >/dev/null 2>&1'
       failed_when: false
       ignore_errors: true
       register: result_sos_branch
-    - debug: msg="Exiting Playbook. There is already an sos Branch. Please clean up."
+    - debug: msg="Exiting Playbook. There is no sos Branch."
       when: result_sos_branch.rc != 0
-    - name: End Play because there is already an sos Branch existing.
+    - name: End Play because there is no sos Branch.
       meta: end_play
       when: result_sos_branch.rc != 0
 
-    ## Start the real work
     - name: List all files which have a conflict during the cherry-pick operation
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git diff --name-only --diff-filter=U | xargs'
       register: conflict_files
-
     - name: Exit if there are no conflict files
       debug:
         msg:
@@ -47,23 +45,41 @@
       meta: end_play
       when: conflict_files.stdout == ""
 
+    ## Start the real work
     - name: Add and commit the file(s) in which the conflict was resolved
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git add {{ conflict_files.stdout }}; git commit -m "Committing files with conflict resolution"'
 
-    - name: Find the last tag in the sos-Branch (which is the version_to_patch in PROD)
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git describe --abbrev=0 --tags'
-      register: latest_tag_sos
+    # Tag the commit in the sos Branch
+    - name: Get list of all tags
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag'
+      register: all_git_tags
 
-    - name: Print latest tag in sos branch
-      debug: var=latest_tag_sos.stdout
+    - name: Find next free patch number
+      set_fact: counter={{item | int + 1}}
+      when:  ("{{version_to_patch.split('.')[0]}}.{{version_to_patch.split('.')[1]}}.{{item}}" in all_git_tags.stdout_lines)
+      with_sequence: start={{version_to_patch.split('.')[2]}} end=10
 
-    - name: Set new Git tag in sos branch - patch number increase
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; /usr/local/bin/git tag -a {{item}} -m "{{item}}"'
+    - debug: var=counter
+
+    - name: Tag the bug-fixed version in sos branch and push to Github
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; /usr/local/bin/git tag -a {{item}} -m "This is Version {{item}}"'
       with_items:
-        - "{{latest_tag_sos.stdout.split('.')[0]}}.{{latest_tag_sos.stdout.split('.')[1]}}.{{latest_tag_sos.stdout.split('.')[2] | int + 1}}"
+        - "{{version_to_patch.split('.')[0]}}.{{version_to_patch.split('.')[1]}}.{{counter}}"
 
-    - name: Push commits and tags to Github
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; /usr/local/bin/git push origin sos --tags'
+#    - name: Find the last tag in the sos-Branch (which is the version_to_patch in PROD)
+#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git describe --abbrev=0 --tags'
+#      register: latest_tag_sos
+
+#    - name: Print latest tag in sos branch
+#      debug: var=latest_tag_sos.stdout
+
+#    - name: Set new Git tag in sos branch - patch number increase
+#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; /usr/local/bin/git tag -a {{item}} -m "{{item}}"'
+#      with_items:
+#        - "{{latest_tag_sos.stdout.split('.')[0]}}.{{latest_tag_sos.stdout.split('.')[1]}}.{{latest_tag_sos.stdout.split('.')[2] | int + 1}}"
+
+    - name: Push sos branch remotely to have the tag
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git push origin sos --tags'
 
     - name: Remove sos branch
       shell: "{{item}}"

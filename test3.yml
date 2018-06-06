@@ -1,0 +1,31 @@
+---
+- name: pl_dsf_git_workflow_3_c_file_selection_sos_add_commit_cherry_pick_2tag_push.yml
+  hosts: localhost
+  become_user: none
+  become: no
+  vars_files:
+    - pl_dsf_git_workflow_all_setupvariables.yml
+
+  tasks:
+    - name: Find latest version (tag) in master branch
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git describe --abbrev=0 --tags'
+      register: latest_tag_sos
+
+    - debug: var=latest_tag_sos.stdout
+
+    - name: Find all git tags
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag'
+      register: all_git_tags
+
+    - debug: var=all_git_tags
+
+    - name: Find next free patch number
+      set_fact: counter={{item | int + 1}}
+      when:  ("{{latest_tag_sos.stdout.split('.')[0]}}.{{latest_tag_sos.stdout.split('.')[1]}}.{{item}}" in all_git_tags.stdout_lines)
+      with_sequence: start={{latest_tag_sos.stdout.split('.')[2] | int + 1}} end=10
+      
+    - name: Set new Git tag in sos branch - patch number increase
+      debug: msg="{{latest_tag_sos.stdout.split('.')[0]}}.{{latest_tag_sos.stdout.split('.')[1]}}.{{counter}}"
+#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; /usr/local/bin/git tag -a {{item}} -m "{{item}}"'
+#      with_items:
+#        - "{{latest_tag_sos.stdout.split('.')[0]}}.{{latest_tag_sos.stdout.split('.')[1]}}.{{counter}}"
