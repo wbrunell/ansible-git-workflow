@@ -25,7 +25,6 @@
   vars_prompt:
     - name: release_change_type_id
       prompt: "What kind of change are you about to release ? \nRequired to identify which field of the version number will be increased. \n1- major\n2- minor\n3- patch"
-
   tasks:
   ## Do some checks
     - name: Check if Directory exists
@@ -76,19 +75,19 @@
       debug: var=latest_tag.stdout
 
     - name: Set new Git tag - major number increase 
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag -a {{item}} -m "This is Version {{item}}"'
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag -a {{item}} -m "{{item}}" -m "{{tag_comment}}"'
       with_items:
         - "{{latest_tag.stdout.split('.')[0] | int + 1}}.0.0"
       when: release_change_type_id == "1"
 
     - name: Set new Git tag - minor number increase
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag -a {{item}} -m "This is Version {{item}}"'
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag -a {{item}} -m "{{item}}" -m "{{tag_comment}}"'
       with_items:
         - "{{latest_tag.stdout.split('.')[0]}}.{{latest_tag.stdout.split('.')[1] | int + 1}}.0"
       when: release_change_type_id == "2"
 
     - name: Set new Git tag - patch number increase
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag -a {{item}} -m "This is Version {{item}}"'
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag -a {{item}} -m "{{item}}" -m "{{tag_comment}}"'
       with_items:
         - "{{latest_tag.stdout.split('.')[0]}}.{{latest_tag.stdout.split('.')[1]}}.{{latest_tag.stdout.split('.')[2] | int + 1}}"
       when: release_change_type_id == "3"
