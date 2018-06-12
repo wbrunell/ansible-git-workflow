@@ -41,7 +41,7 @@
       when: dir.stat.exists == false
       
     - name: Check that branch exists (save_from_migration)
-      stat: path={{local_base_dir}}/{{repo_dir_name}}i; git branch -a | grep save_from_migration'
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git branch -a | grep save_from_migration'
       register: result
     - debug: msg="Exiting Playbook. Branch to fail back (save_from_migration) does not exist"
       when: result.rc != 0
@@ -50,10 +50,13 @@
       when: result.rc != 0
 
     - name: Copy current status to a new branch      
-      shell: {{item}}
+      shell: "{{item}}"
       with_items:
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git checkout save_from_migration'
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git branch -d master'
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git branch master'
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git checkout master' 
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git push origin master' 
 #       Delete tags ....
+
+
