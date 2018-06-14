@@ -62,7 +62,7 @@
     - debug: var=counter
 
     - name: Tag the bug-fixed version in sos branch and push to Github
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; /usr/local/bin/git tag -a {{item}} -m "{{item}}" -m "{{tag_comment}}"'
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; /usr/local/bin/git tag {{item}} -m "{{item}}" -m "{{tag_comment}}"'
       with_items:
         - "{{version_to_patch.split('.')[0]}}.{{version_to_patch.split('.')[1]}}.{{counter}}"
 

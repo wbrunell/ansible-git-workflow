@@ -24,7 +24,7 @@
     - name: Download project from GIT https://github.com/wbrunell/{{stream_feed}}
       git: repo=https://github.com/wbrunell/{{stream_feed}} dest=/tmp/{{stream_feed}}
     - name: Find latest version (tag)
-      shell: git describe --abbrev=0 --tags chdir=/tmp/{{stream_feed}}
+      shell: git tag --sort=creatordate | tail -1  chdir=/tmp/{{stream_feed}}
       register: latest_tag  
     - name: Create tar.gz Archive for RPM package (excluding .git directory)
       shell: /usr/bin/tar czf /tmp/{{stream_feed}}.tar.gz ./{{stream_feed}} --exclude ./{{stream_feed}}/.git chdir=/tmp warn=false

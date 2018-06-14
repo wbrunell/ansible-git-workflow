@@ -51,7 +51,7 @@
         - t3
         - t4
     - name: Create Starting Tag 1.0.0 and push everything to Github
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag -a 1.0.0 -m "Starting Version"; git push origin master --tags'
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag 1.0.0 -m "Starting Version"; git push origin master --tags'
       
     - name: Create .gitignore and push to Github
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; echo ".branch_sos" > .gitignore; git add .; git push origin master --tags'
