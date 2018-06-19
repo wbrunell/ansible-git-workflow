@@ -3,9 +3,9 @@
 # Who?		Walter Brunelli
 
 # Define default values for the following variables
-repo_url: https://github.com/wbrunell/repo01
+repo_url: https://github.com/wbrunell/repo03
 local_base_dir: /var/tmp
-repo_dir_name: repo01
+repo_dir_name: repo03
 release_change_type: minor
 
 # Default values only for Workflow_2 and 3
@@ -17,8 +17,9 @@ version_to_patch: 1.0.0
 # Possible values for the variables are:
 # release_change_type: major|minor|patch
 
-# Prepare the comment for version-tag
+# Prepare the comment for tag
 tag_comment : |
+  TAG COMMENT
   Attributes:
   TRANSACTIONS=...
   RESPONSIBLE=...
@@ -26,3 +27,24 @@ tag_comment : |
   PCRVERSION=...
   INSTALLED=...
   CR=...
+# Prepare the comment for the commit
+commit_comment : |
+  COMMIT COMMENT
+  Attributes:
+  TRANSACTIONS=...
+  RESPONSIBLE=...
+  REQUEST=...
+  PCRVERSION=...
+  INSTALLED=...
+  CR=...
+#
+## Commands for the commit and the tag
+## Var1: ANNOTATED TAGS / DSF metadata in Tag-Comment
+commit_command: git commit -m "COMMIT Comment - update code"
+tag_command: git tag {{item}} -m "{{item}}" -m "{{tag_comment}}"    # ANNOTATED TAG
+## Var2: LIGHTWEIGHT TAGS / DSF metadata in Commit-Comment
+#commit_command: git commit -m "{{commit_comment}}"
+#tag_command: git tag {{item}}                                       # LIGHTWEIGHT TAG
+
+
+

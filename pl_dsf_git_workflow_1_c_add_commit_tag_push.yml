@@ -65,7 +65,7 @@
     
     ## Do the real work
     - name: Add and commit changes 
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git add {{file_selection}} ; /usr/local/bin/git commit -m "Commit changes"'
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git add {{file_selection}} ; {{commit_command}}'
 
     - name: Find latest version (tag)
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag --sort=creatordate | tail -1'
@@ -75,19 +75,22 @@
       debug: var=latest_tag.stdout
 
     - name: Set new Git tag - major number increase 
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag {{item}} -m "{{item}}" -m "{{tag_comment}}"'
+#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag {{item}} -m "{{item}}" -m "{{tag_comment}}"'
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; {{tag_command}}'
       with_items:
         - "{{latest_tag.stdout.split('.')[0] | int + 1}}.0.0"
       when: release_change_type_id == "1"
 
     - name: Set new Git tag - minor number increase
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag {{item}} -m "{{item}}" -m "{{tag_comment}}"'
+#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag {{item}} -m "{{item}}" -m "{{tag_comment}}"'
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; {{tag_command}}'
       with_items:
         - "{{latest_tag.stdout.split('.')[0]}}.{{latest_tag.stdout.split('.')[1] | int + 1}}.0"
       when: release_change_type_id == "2"
 
     - name: Set new Git tag - patch number increase
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag {{item}} -m "{{item}}" -m "{{tag_comment}}"'
+#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git tag {{item}} -m "{{item}}" -m "{{tag_comment}}"'
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; {{tag_command}}'
       with_items:
         - "{{latest_tag.stdout.split('.')[0]}}.{{latest_tag.stdout.split('.')[1]}}.{{latest_tag.stdout.split('.')[2] | int + 1}}"
       when: release_change_type_id == "3"
