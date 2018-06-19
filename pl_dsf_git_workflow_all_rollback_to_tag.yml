@@ -1,5 +1,5 @@
 #
-# What : Playbook to to save the current code in working-dir into a new branch  
+# What : Playbook to to rollback to a certain tag and remove all tags afterwards
 #	 This includes :	- remove all files
 #				- remove all tags
 #				- remove all branches
@@ -11,9 +11,10 @@
 #	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml -e "repo_url=https://github.com/wbrunell/repo01"
 #	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml -e "repo_dir_name=repo01"
 #	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml -e "local_base_dir=/var/tmp"
+#	 ansible-playbook pl_dsf_git_workflow_clean_repo.yml -e "target_tag=1.0.0"
 
 ---
-- name: Save current status in a branch
+- name: Playbook to to rollback to a certain tag and remove all tags afterwards
   hosts: localhost
   become_user: none
   become: no
@@ -29,24 +30,29 @@
       when: dir.stat.exists == true
       #debug: msg="repo_dirname = {{repo_dir_name}}"
 
-    - name: Check that branch does not already exists
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git branch -a | grep save_from_migration'
-      register: branch
-    - debug: Exiting, Branch save_from_migration already exists. Code already saved.
-      when: branch.rc == 0
-    - name: End Play if branch does already exist
-      meta: end_play
-      when: branch.rc == 0
-
-    - name: Create directory if it does not exist and clone from Github
+    - name: Clone directory if it does not exist and clone from Github
       git: repo={{repo_url}} dest={{local_base_dir}}/{{repo_dir_name}}
       when: dir.stat.exists == false
+
+    - name: Check that the tag exists
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag | grep {{target_tag}} | wc -l'
+      register: tag_result
+    - debug: msg="Exiting Playbook. There is no such Tag !!"
+      when: tag_result.stdout == 0 or tag_result.rc !=0
+    - name: End Play if there is no such Tag                     
+      meta: end_play
+      when: tag_result.stdout == 0 or tag_result.rc !=0
       
-    - name: Copy current status to a new branch      
-      shell: "{{item}}"
-      with_items:
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git checkout save_from_migration'
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git branch -d master'
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git branch master'
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git checkout master' 
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git push origin master' 
+    - name: Find all tags after <Target-Tag> and delete them
+      shell: "cd {{local_base_dir}}/{{repo_dir_name}}; git tag --sort=version:refname | awk '$1 > {{target_tag}}' | cut -d' ' -f1 | xargs"
+      register: tags_after
+
+    - name: Delete Tags locally
+      shell: "cd {{local_base_dir}}/{{repo_dir_name}}; git tag -d {{tags_after.stdout}}"
+
+    - name: Delete Tags upstream
+      shell: "cd {{local_base_dir}}/{{repo_dir_name}}; git push origin --tags :{{tags_after.stdout | replace(' ', ' :')}}"
+
+    - name: Really rollback
+      shell: "cd {{local_base_dir}}/{{repo_dir_name}}; git reset --hard {{target_tag}}; git clean -fd; git push origin --force"
+
