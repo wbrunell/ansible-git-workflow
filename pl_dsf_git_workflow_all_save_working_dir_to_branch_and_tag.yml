@@ -18,8 +18,8 @@
   become_user: none
   become: no
   vars:
-    backup_branch_name: backup
-    backup_tag_name: backup
+    backup_branch_name: backup_{{ansible_date_time.date}}_{{ansible_date_time.hour}}-{{ansible_date_time.minute}}-{{ansible_date_time.second}}
+    backup_tag_name: backup_dwproot_{{ansible_date_time.date}}_{{ansible_date_time.hour}}-{{ansible_date_time.minute}}-{{ansible_date_time.second}}
   vars_files:
     - pl_dsf_git_workflow_all_setupvariables.yml
 
@@ -59,13 +59,16 @@
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git fetch'
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git checkout --orphan {{backup_branch_name}}'
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git add .'
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git commit -m "first commit of {{backup_branch_name}}'
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git commit -m "first commit of {{backup_branch_name}}"'
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git push -u origin {{backup_branch_name}}'
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git checkout -f master'
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git pull --tags'
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git checkout -f {{backup_branch_name}}' 
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag {{backup_tag_name}}i -m "This is the backup of the code in dwp_root"' 
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag {{backup_tag_name}} -m "This is the backup of the code in dwp_root"' 
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git push origin --tags' 
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git checkout -f master' 
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git pull' 
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git clean -fd' 
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git branch -D {{backup_branch_name}}' 
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git push origin :{{backup_branch_name}}' 
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git git diff master backup'
+#        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git diff master {{backup_tag_name}}'
