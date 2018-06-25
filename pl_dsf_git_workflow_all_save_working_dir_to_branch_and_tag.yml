@@ -19,7 +19,7 @@
   become: no
   vars:
     backup_branch_name: backup
-    backup_tag: backup
+    backup_tag_name: backup
   vars_files:
     - pl_dsf_git_workflow_all_setupvariables.yml
 
@@ -27,7 +27,7 @@
     - name: Check that the  Directory exists
       stat: path={{local_base_dir}}/{{repo_dir_name}}
       register: dir
-    - debug: Exiting Directory does not exist
+    - debug: msg="Exiting Directory does not exist"
       when: dir.stat.isdir == false
     - name: End Play 
       meta: end_play
@@ -36,20 +36,20 @@
     - name: Check that the Directory is not already under GIT control
       stat: path={{local_base_dir}}/{{repo_dir_name}}/.git
       register: dir
-    - debug: Exiting, Directory is already under GIT control
+    - debug: msg="Exiting, Directory is already under GIT control"
       when: dir.stat.exists == true
     - name: End Play 
       meta: end_play
       when: dir.stat.exists == true
 
-    - name: Check that branch does not already exists
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git branch -a | grep {{backup_branch_name}}'
-      register: branch
-    - debug: Exiting, Branch save_from_migration already exists. Code already saved.
-      when: branch.rc == 0
-    - name: End Play if branch does already exist
-      meta: end_play
-      when: branch.rc == 0
+#    - name: Check that branch does not already exists
+#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git branch -a | grep {{backup_branch_name}}'
+#      register: branch
+#    - debug: msg="Exiting, Branch save_from_migration already exists. Code already saved."
+#      when: branch.rc == 0
+#    - name: End Play if branch does already exist
+#      meta: end_play
+#      when: branch.rc == 0
 
     - name: Copy current status to a new branch, tag it and remove Branch 
       shell: "{{item}}"
@@ -58,7 +58,7 @@
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git remote add origin {{repo_url}}'
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git fetch'
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git checkout --orphan {{backup_branch_name}}'
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git git add .'
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git add .'
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git commit -m "first commit of {{backup_branch_name}}'
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git push -u origin {{backup_branch_name}}'
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git checkout -f master'
