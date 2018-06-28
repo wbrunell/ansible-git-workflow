@@ -17,12 +17,12 @@
   hosts: localhost
   become_user: none
   become: no
+  vars_files:
+    - pl_dsf_git_workflow_all_setupvariables.yml
   vars:
     backup_branch_name: backup_{{ansible_date_time.date}}_{{ansible_date_time.hour}}-{{ansible_date_time.minute}}-{{ansible_date_time.second}}
     backup_tag_name: 	backup_dwproot_{{ansible_date_time.date}}_{{ansible_date_time.hour}}-{{ansible_date_time.minute}}-{{ansible_date_time.second}}
-    temp_repo_dir_name: {{repo_dir_name}}_temp
-  vars_files:
-    - pl_dsf_git_workflow_all_setupvariables.yml
+    temp_repo_dir_name: "{{repo_dir_name}}_temp"
 
   tasks:
     - name: Check that the  Directory exists
@@ -47,7 +47,7 @@
       file: path={{local_base_dir}}/{{temp_repo_dir_name}} state=absent
 
     - name: Clone Repo to temporary location
-      shell: 'cd /var/tmp{{local_base_dir}}; git clone {{repo_url}} {{temp_repo_dir_name}}'
+      shell: 'cd /var/tmp; git clone {{repo_url}} {{temp_repo_dir_name}}'
 
     - name: Copy GIT config from temp_repo to my repo and add/commit all files and tag the new version
       shell: "{{item}}"
@@ -59,3 +59,7 @@
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag NEW-TAG -m "This is the code from dwp_root in"' 
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git push origin master --tags'
 #        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git diff master {{backup_tag_name}}'
+
+    - name: Delete temporary dir 
+      file: path={{local_base_dir}}/{{temp_repo_dir_name}} state=absent
+
