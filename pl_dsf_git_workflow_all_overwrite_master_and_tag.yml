@@ -19,7 +19,8 @@
   become: no
   vars:
     backup_branch_name: backup_{{ansible_date_time.date}}_{{ansible_date_time.hour}}-{{ansible_date_time.minute}}-{{ansible_date_time.second}}
-    backup_tag_name: backup_dwproot_{{ansible_date_time.date}}_{{ansible_date_time.hour}}-{{ansible_date_time.minute}}-{{ansible_date_time.second}}
+    backup_tag_name: 	backup_dwproot_{{ansible_date_time.date}}_{{ansible_date_time.hour}}-{{ansible_date_time.minute}}-{{ansible_date_time.second}}
+    temp_repo_dir_name: {{repo_dir_name}}_temp
   vars_files:
     - pl_dsf_git_workflow_all_setupvariables.yml
 
@@ -42,36 +43,19 @@
       meta: end_play
       when: dir.stat.exists == true
 
-#    - name: Check that branch does not already exists
-#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git branch -a | grep {{backup_branch_name}}'
-#      register: branch
-#    - debug: msg="Exiting, Branch save_from_migration already exists. Code already saved."
-#      when: branch.rc == 0
-#    - name: End Play if branch does already exist
-#      meta: end_play
-#      when: branch.rc == 0
+    - name: Delete temporary dir if it exists
+      file: path={{local_base_dir}}/{{temp_repo_dir_name}} state=absent
 
-    - name: Copy current status to a new branch, tag it and remove Branch 
+    - name: Clone Repo to temporary location
+      shell: 'cd /var/tmp{{local_base_dir}}; git clone {{repo_url}} {{temp_repo_dir_name}}'
+
+    - name: Copy GIT config from temp_repo to my repo and add/commit all files and tag the new version
       shell: "{{item}}"
       with_items:
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git init .'
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git remote add origin {{repo_url}}'
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git fetch'					# Fetch repo and tags tolocal repo
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git checkout --orphan {{backup_branch_name}}'
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}; cp -pr ../{{temp_repo_dir_name}}/.git .'
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git add .'
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git commit -m "first commit of {{backup_branch_name}}"'
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag {{backup_tag_name}} -m "This is the backup of the code in dwp_root"' 
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git push -u origin {{backup_branch_name}} --tags'
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git checkout -f master'
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git pull --tags'
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git clean -fd' 
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; rm -rf *' 
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git add .'
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git commit -m "removing everything in master branch"'
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git merge -X theirs {{backup_branch_name}} --allow-unrelated-histories -m "Merging backup branch to master"' 
-# for AIX: - 'cd {{local_base_dir}}/{{repo_dir_name}}; git merge -X theirs {{backup_branch_name}} -m "Merging backup branch to master"' 
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag NEW-TAG -m "This is the new version. Based on what was in dwp_root"' 
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git commit -m "Overwriting the master branch with code from /dwp_root"'
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag NEW-TAG -m "This is the code from dwp_root in"' 
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; git push origin master --tags'
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git branch -D {{backup_branch_name}}' 
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git push origin :{{backup_branch_name}}' 
 #        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git diff master {{backup_tag_name}}'
