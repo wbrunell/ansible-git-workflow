@@ -95,7 +95,8 @@
       register: commit_in_master
 
     - name: Find latest version (tag) in master branch
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag --sort=creatordate | tail -1'
+#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag --sort=creatordate | tail -1'
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag | tail -1'
       register: latest_tag  
 
     - name: Print latest tag in master branch
