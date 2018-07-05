@@ -94,11 +94,18 @@
       when: not("{{version_to_patch}}" in all_git_tags.stdout_lines)  or  version_to_patch is undefined
 
     ## Start the real work
+
     - name: Find all added or modified files 
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git ls-files --other -m --exclude-standard --error-unmatch {{file_selection}} 2>&1'
       failed_when: false
       ignore_errors: true
       register: all_created_or_modified_files
+
+    - name: Find all deleted files 
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git ls-files --deleted --exclude-standard --error-unmatch {{file_selection}} 2>&1'
+      failed_when: false
+      ignore_errors: true
+      register: all_deleted_files
 
     - name: Print all added or modified files
       debug: var=all_created_or_modified_files.stdout
@@ -146,10 +153,10 @@
         - 'git add {{all_created_or_modified_files.stdout}}'
         - '{{commit_command}}'
 
-#    - name: Switch to sos Branch and remove all removed files
-#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; cp -pf ../{{item}} {{item}}'
+#    - name: Switch to sos Branch and deleted all files
+#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; rm -f {{item}}'
 #      with_items:
-#        - all_removed_files.stdout
+#        - "{{all_deleted_files.stdout}}"
 
     # Tag the commit in the sos Branch
     - name: Get list of all tags
