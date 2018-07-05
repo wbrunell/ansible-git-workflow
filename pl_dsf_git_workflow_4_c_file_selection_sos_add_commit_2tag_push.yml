@@ -1,5 +1,11 @@
 #
-# What : Playbook to push changes into GITHUB
+# What : Playbook to 
+#	- Create an sos branch from an old tag
+#	- Copy updated file(s) from working directory to sos branch
+#	- add/commit/tag and push the sos branch
+#	- delete the sos branch
+#	- add/commit/tag and push the sos branch
+#
 #	 This includes :	- Changes on old code version (Parapeter version_to_patch)
 #				- Changes to current version
 #        Tasks ececuted:	- git add / git commit
@@ -18,7 +24,7 @@
 #	 ansible-playbook ${0} -e "version_to_patch=<tag|version>"		# Default: 1.0.0
 
 ---
-- name: pl_dsf_git_workflow_3_c_file_selection_sos_add_commit_cherry_pick_2tag_push.yml
+- name: Playbook
   hosts: localhost
   become_user: none
   become: no
@@ -87,21 +93,22 @@
       meta: end_play
       when: not("{{version_to_patch}}" in all_git_tags.stdout_lines)  or  version_to_patch is undefined
 
-    ## Avoid cherry-pick conflict by checking if your modified file existed in the version to patch
-    ## If the file you're modifying, did not exist in the version-to-patch, the file must first be created before cheryy-picking the change
-
     ## Start the real work
-    - name: Add and commit changes of a (or more) specific files to master branch
+    - name: Find all added or modified files 
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git ls-files --other -m --exclude-standard --error-unmatch {{file_selection}} 2>&1'
+      failed_when: false
+      ignore_errors: true
+      register: all_created_or_modified_files
+
+    - name: Print all added or modified files
+      debug: var=all_created_or_modified_files.stdout
+
+    - name: Add and commit changes of one (or more) specific files to master branch
       shell: "{{item}} chdir={{local_base_dir}}/{{repo_dir_name}}"
       with_items:
         - 'git add {{file_selection}}'
-#        - 'git commit -m "Commit changes"'
         - '{{commit_command}}'
         - 'git push origin master --tags'
-
-    - name: Get the commit-hash
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git log --pretty=oneline -1 --pretty=format:"%h"' 
-      register: commit_in_master
 
     - name: Find latest version (tag) in master branch
 #      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; git tag --sort=creatordate | tail -1'
@@ -125,33 +132,24 @@
       shell: "{{item}}"
       with_items:
         - 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git branch sos {{version_to_patch}}'
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git worktree add .branch_sos sos' 
+        - 'cd {{local_base_dir}}/{{repo_dir_name}}; git worktree add .branch_sos sos'
 
-    - name: Switch to sos Branch and cherry-pick the sos-commit-change
-      shell: "{{item}}"
+    - name: Switch to sos Branch and copy all created or modified files from master branch
+      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; cp -pf ../{{item}} {{item}}'
       with_items:
-        - 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git cherry-pick -X theirs {{commit_in_master.stdout}}'
-      failed_when: false
-      ignore_errors: true
-      register: result_cherry_pick
+        - "{{all_created_or_modified_files.stdout}}"
 
-    - debug: var=result_cherry_pick.results[1].rc
+    - name: Add and commit changes in sos branch
+      shell: "{{item}} chdir={{local_base_dir}}/{{repo_dir_name}}/.branch_sos"
+      with_items:
+#        - 'git add {{file_selection}}'
+        - 'git add {{all_created_or_modified_files.stdout}}'
+        - '{{commit_command}}'
 
-    - name: List all files which have a conflict during the cherry-pick operation             
-      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git diff --name-only --diff-filter=U'     
-      register: conflict_files
-      when: result_cherry_pick.results[1].rc != "0"
-    - debug: 
-        msg:
-          - "Exiting Playbook. There is a merge-conflict during the cherry-pick operarion."
-          - "Pls go into .branch_sos and fix the conflict in file(s) :"
-          - "    {{ conflict_files.stdout}}"
-          - "Then execute and run 'git add <file>; git cherry-pick --continue --empty-message')"
-          - "To Abort the whole thing: use 'git cherry-pick --abort' to cancel the cherry-pick operation)"
-      when: result_cherry_pick.results[1].rc != 0
-    - name: End Play because there is a conflict duting the cherry-pick-merge into sos-branch
-      meta: end_play
-      when: result_cherry_pick.results[1].rc != 0
+#    - name: Switch to sos Branch and remove all removed files
+#      shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; cp -pf ../{{item}} {{item}}'
+#      with_items:
+#        - all_removed_files.stdout
 
     # Tag the commit in the sos Branch
     - name: Get list of all tags
