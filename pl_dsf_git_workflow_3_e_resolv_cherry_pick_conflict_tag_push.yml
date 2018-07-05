@@ -32,9 +32,10 @@
       meta: end_play
       when: result_sos_branch.rc != 0
 
-    - name: List all files which have a conflict during the cherry-pick operation
+    - name: List all files which had a conflict during the cherry-pick operation
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}/.branch_sos; git diff --name-only --diff-filter=U | xargs'
       register: conflict_files
+
     - name: Exit if there are no conflict files
       debug:
         msg:
