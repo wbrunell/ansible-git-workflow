@@ -1,0 +1,14 @@
+Ok (no conflict) when
+- Update a file in the current version, which did exist in the version to patch			OK verified
+- Create a new file in the current version, a file which did exist in the version to patch	OK verified
+- Create a new file in the current version, a file which did NOT exist in the version to patch	OK verified
+- # Input from Matthias : Check : - 1 File upgedatet  +  1 neues File				OK verified
+
+Conflict when
+- Change a file in the current version, which did NOT exist in the version to patch.		OK verified
+  -> Workaround: create the file before applying the cherry-pick !
+
+
+# Other changes :
+Possibility to remove a file
+

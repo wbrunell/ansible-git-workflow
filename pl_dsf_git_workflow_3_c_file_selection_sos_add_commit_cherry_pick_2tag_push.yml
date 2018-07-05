@@ -61,6 +61,12 @@
       meta: end_play
       when: result.rc != 0
 
+    - debug: msg="Exiting Playbook. The '-e file_selection=' parameter must be one or multiple files"
+      when: ( file_selection == "." )
+    - name: Exit if the given file(s) {{file_selection}} is a dot
+      meta: end_play
+      when: ( file_selection == "." )
+
     - name: Check if there is already an sos-Branch
       shell: 'cd {{local_base_dir}}/{{repo_dir_name}}; /usr/local/bin/git branch --list | grep sos >/dev/null 2>&1'
       failed_when: false
@@ -80,6 +86,9 @@
     - name: End Play because version to patch {{version_to_patch}}    
       meta: end_play
       when: not("{{version_to_patch}}" in all_git_tags.stdout_lines)  or  version_to_patch is undefined
+
+    ## Avoid cherry-pick conflict by checking if your modified file existed in the version to patch
+    ## If the file you're modifying, did not exist in the version-to-patch, the file must first be created before cheryy-picking the change
 
     ## Start the real work
     - name: Add and commit changes of a (or more) specific files to master branch
